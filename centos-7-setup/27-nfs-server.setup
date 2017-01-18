@@ -1,0 +1,70 @@
+#!/bin/bash
+#
+# description: NFS server (v4)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20151011
+# Info: 
+#
+# References
+#   http://initrd.org/wiki/NFS_Setup
+#   Red Hat Enterprise Linux 7 Storage Administration Guide
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+x yum -y install rpcbind nfs-utils nfs4-acl-tools
+
+addfwrule internal --add-service=nfs
+
+#echo "Disabling NFS v2 and v3 in rpc.nfsd..."
+x 'sed -i "s/RPCNFSDARGS=\"/RPCNFSDARGS=\"-N 2 -N 3/" /etc/sysconfig/nfs'
+
+#echo "Increasing number of rpc.nfsd threads to 32..."
+x sed -i 's/RPCNFSDCOUNT=8/RPCNFSDCOUNT=32/' /etc/sysconfig/nfs
+
+remember is_nfs_srv 1
+
+todos << EOF
+--- NFS Server
+Configure NFS: vi /etc/sysconfig/nfs
+  See RHEL Storage Admin Guide Chapter 8. NFS ...
+Review and set SELinux NFS rules
+  semanage boolean -l | egrep "nfs|SELinux"
+Check/configure NFS domain:
+  vi /etc/idmapd.conf
+Configure shares: vi /etc/exports
+  Use root_squash for all exported shares!
+then enable and start NFSv4 services
+  systemctl start rpcbind nfs-idmap nfs-server
+  systemctl enable nfs-server.service
+If you also need NFSv3 then:
+  sed -i 's/RPCNFSDARGS="-N 2 -N 3"/RPCNFSDARGS="-N 2"/' /etc/sysconfig/nfs
+  systemctl start nfs-lock
+  systemctl enable nfs-lock
+
+EOF
+
+# Install monitoring plugins
+if [ $is_nagios ]; then
+  echo "Installing Nagios plugins to monitor NFS server..."
+  x 'curl -Lso /usr/lib64/nagios/plugins/check_nfs_export "http://exchange.nagios.org/components/com_mtree/attachment.php?link_id=5822&cf_id=24"'
+  x chown nagios /usr/lib64/nagios/plugins/check_nfs_export
+  x chgrp nrpe /usr/lib64/nagios/plugins/check_nfs_export
+  x chmod 550 /usr/lib64/nagios/plugins/check_nfs_export
+  x restorecon -R /usr/lib64/nagios/plugins/
+  todos <<EOF
+--- NFS monitoring using Nagios
+Nagios plugins for NFS export monitoring installed in /usr/lib64/nagios/plugins/
+  See http://exchange.nagios.org/directory/Plugins/System-Metrics/File-System/NFS/check_nfs_export/details
+If you have nrpe installed (nagios client):
+  vi /etc/nagios/nrpe.cfg
+and add commands for NFS monitoring. E.g.:
+  command[nfs_share]=/usr/lib64/nagios/plugins/check_nfs_export -H ${HOSTNAME} -p some-nfs-export-path
+
+EOF
+
+fi

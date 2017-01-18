@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# description: R development components
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20150615
+#
+# References
+#
+# TODO list (known issues):
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Installing R..."
+x yum -y --enablerepo=epel install R
+
+remember is_r_devel 1
+
+todos << EOF
+--- R development tools
+To install additional packages do the following:
+Start R
+  R
+Choose your CRAN mirror
+  > chooseCRANmirror()
+Install packages, e.g.
+  > install.packages('wordcloud')
+  > install.packages('rmongodb')
+  etc.
+
+EOF
+
+if askif "Install R studio server?" y; then
+  rpm=$(curl -vs http://www.rstudio.com/products/rstudio/download-server/ 2>&1 | egrep -oh http.\*rstudio-server-rhel-.\*-.\*rpm | grep $ARCH)
+  x "yum -y install $rpm"
+  remember is_rstudio 1
+  if askif "Do you want to use LDAP auth for R Studio?" n; then
+    x 'sed -i "s/pam_unix/pam_ldap/g" /etc/pam.d/rstudio'
+    cat << EOF >> /etc/pam.d/rstudio
+# To allow login for a certain group uncomment and edit the following:
+# account   required       pam_succeed_if.so user ingroup rstudio
+EOF
+todos << EOF
+--- R studio server
+See /etc/pam.d/rstudio for authentication and
+/etc/rstudio/ for configuration files.
+
+EOF
+  fi
+fi
+
+

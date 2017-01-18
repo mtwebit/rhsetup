@@ -1,0 +1,108 @@
+#!/bin/bash
+#
+# description: PHP Support
+#
+# CentOS post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# References
+#
+# Version 20150113
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Checking PHP repos and versions..."
+echo -n "Base "
+yum --disablerepo=* --enablerepo=base --enablerepo=updates info php|egrep "(Version|Repo)"|sort
+echo -n "Latest "
+yum --enablerepo=remi\* info php|grep "Repo "|grep -v "debuginfo"|sort|uniq
+
+ask PHP_REPO "Which repo would you like to use?" "updates"
+
+phprpms="php php-cli"
+[ $is_mysql ] && phprpms="$phprpms php-mysql"
+[ $is_mongodb ] && phprpms="$phprpms php-pecl-mongo"
+[ $is_pgsql ] && phprpms="$phprpms php-pgsql"
+
+if askif "Install FastCGI support for PHP (rec'd for large sites)?" y; then
+  phprpms="$phprpms php-fpm"
+  remember is_php_fpm 1
+fi
+
+echo "Installing php from repo '$PHP_REPO'..."
+x yum -y --enablerepo=$PHP_REPO install $phprpms
+
+remember is_php 1
+
+has_ssmtp=`alternatives --display mta | grep "link " | grep -c ssmtp`
+if [ "${has_ssmtp}" == "1" ]; then
+  echo "Configuring sSMTP to allow changing From address..."
+  x "sed -i 's/#FromLineOverride=YES/FromLineOverride=YES/g' /etc/ssmtp/ssmtp.conf"
+fi
+
+echo "Tuning php config (timezone,expose_php)..."
+x "sed -i 's#;date.timezone =#date.timezone = $TZNAME#' /etc/php.ini"
+x "sed -i 's/expose_php = On/expose_php = Off/' /etc/php.ini"
+
+
+echo "Fixing buggy Logwatch script and config for PHP..."
+x curl -Ls -o /etc/logwatch/conf/logfiles/php.conf "http://old.mbaierl.com/blog/files/logwatch/logfiles_php.conf"
+x curl -Ls -o /etc/logwatch/conf/services/php.conf "http://mbaierl.com/blog/files/logwatch/services_php.conf"
+x "sed -i 's/http-error/http/g' /etc/logwatch/conf/services/php.conf"
+x "sed -i 's/Detail = High/#Detail = High/g' /etc/logwatch/conf/services/php.conf"
+x curl -Ls -o /etc/logwatch/scripts/services/php "http://mbaierl.com/blog/files/logwatch/scripts_php"
+x chmod 755 /etc/logwatch/scripts/services/php
+
+todos << EOF
+--- PHP
+PHP is installed from $PHP_REPO repository.
+Review your php settings, e.g. date.timezone
+  vi /etc/php.ini
+Specify the location of PHP error log files (usually Apache error logs):
+  vi /etc/logwatch/conf/logfiles/php.conf
+Check installed PHP packages: rpm -qa|grep php
+Review additional PHP-related packages
+  yum --enablerepo=$PHP_REPO search php | less
+  e.g.: php-imap php-mbstring php-mcrypt php-xml php-pear php-tidy php-process
+Review more php PEAR and PECL packages and channels:
+  yum info php-pear-\* | less
+  yum info php-ezc-\* | less
+  php-channel-doctrine http://www.doctrine-project.org/
+  php-channel-horde http://pear.horde.org/ (Horde Groupware)
+  php-channel-htmlpurifier http://htmlpurifier.org
+  php-channel-phpdoc http://phpdoc.org/
+  etc.
+If you need to compile PECL packages, install the development tools:
+  yum groupinstall "Development tools"
+
+EOF
+
+if [ $is_php_fpm ]; then
+  echo "Tuning php config for php-fpm (cgi.fix_pathinfo)..."
+  x "sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/' /etc/php.ini"
+  echo "Tuning php-fpm configuration..."
+  x "sed -i 's#listen = 127.0.0.1:9000#listen = /var/run/php-fpm/php-fpm.sock#' /etc/php-fpm.d/www.conf"
+  x "sed -i 's/;listen.group = nobody/listen.group = apache/' /etc/php-fpm.d/www.conf"
+  if [ $is_apache ]; then
+    echo "Allowing index.php served as directory index in httpd.conf"
+  fi
+  x "sed -i 's/DirectoryIndex index.html$/DirectoryIndex index.html index.php/' /etc/httpd/conf/httpd.conf"
+  todos <<EOF
+Configure php-fpm
+  vi /etc/php-fpm.conf
+and set
+  emergency_restart_threshold = 10
+  emergency_restart_interval = 1m
+  process_control_timeout = 10
+Review the configuration of php-fpm pool(s)
+  vi /etc/php-fpm.d/www.conf
+  listen = /var/run/php-fpm/php-fpm.sock
+Finally enable and start php-fpm
+  systemctl restart php-fpm
+  systemctl status php-fpm
+  systemctl enable php-fpm.service
+
+EOF

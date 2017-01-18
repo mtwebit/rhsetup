@@ -1,0 +1,121 @@
+#!/bin/bash
+#
+# description: Web server (Apache)
+#
+# CentOS post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20160323
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Installing Apache Web server..."
+
+apachepkgs=httpd
+apacheservices="--add-service=http"
+
+#httpd-itk in epel is broken atm
+#if askif "Do you need separate uid and gid for vhosts (httpd-itk)?" n; then
+# x yum -y install httpd-itk
+#fi
+
+if askif "Do you need mod_ssl (to support https requests)?" y; then
+  apachepkgs="$apachepkgs mod_ssl"
+  apacheservices="$apacheservices --add-service=https"
+fi
+
+if askif "Do you need mod_security?" n; then
+  apachepkgs="$apachepkgs mod_secutiry"
+fi
+
+if askif "Do you need mod_nss (strong crypto using NSS lib)?" n; then
+  apachepkgs="$apachepkgs mod_nss"
+fi
+
+echo "Installing Apache and additional utilities..."
+apachepkgs="$apachepkgs apachetop"
+
+x yum -y install $apachepkgs
+
+remember is_websrv 1
+remember is_apache 1
+
+echo "Disabling directory indexing..."
+x "sed -i 's/Options Indexes/Options/g' /etc/httpd/conf/httpd.conf"
+
+echo "Customizing Apache Logwatch configuration..."
+x "/bin/cp /usr/share/logwatch/default.conf/services/http.conf /etc/logwatch/conf/services/http.conf"
+x "/bin/cp /usr/share/logwatch/default.conf/logfiles/http.conf /etc/logwatch/conf/logfiles/http.conf"
+  cat <<EOF >> /etc/logwatch/conf/services/http.conf
+
+# Display detailed HTTP errors only on high level
+\$HTTP_RC_DETAIL_REP-404=High
+\$HTTP_RC_DETAIL_REP-403=High
+
+EOF
+
+addfwrule public $apacheservices
+
+todos <<EOF
+--- Apache Web Server
+Configure Apache Web server
+  vi /etc/httpd/conf/httpd.conf
+Check virtual host configurations in
+  /etc/httpd/conf.d/
+Consider disabling unwanted modules (like dav, lua, auth..., ) in
+  /etc/httpd/conf.modules.d
+Select the MPM module which should be used
+  vi /etc/httpd/conf.modules.d/00-mpm.conf
+Configure mod_security if installed
+  vi /etc/httpd/conf.d/mod_security.conf
+Review SELinux flags for your webserver:
+  getsebool -a | grep -i httpd
+and set them permamnently, e.g.
+  setsebool -P httpd_can_sendmail on
+Configure Logwatch to know your logfile locations
+  vi /etc/logwatch/conf/logfiles/http.conf
+After configuration is finished:
+  service httpd configtest
+If OK, then
+  systemctl enable httpd.service && systemctl restart httpd.service
+  systemctl -l status httpd.service
+More modules to consider: yum info mod_evasive mod_limitipconn mod_xsendfile
+Test your webserver performance using ab:
+  ab -n 100 -c 10 http://localhost/     # 100 requests, 10 at a time
+  ab -kc 10 -t 30 http://localhost/     # test for 30s using keepalive
+Consider changing system performance profile if needed
+  tuned-adm active
+  tuned-adm list
+  tuned-adm profile latency-performance
+
+Monitoring the Apache server
+( echo -n apachetop ; for i in `ls /var/log/httpd/\*log`; do echo -n " -f \$i"; done; echo "" ) | bash
+
+Configure Webalizer
+  vi /etc/webalizer.conf
+and enable Web access
+  vi /etc/httpd/conf.d/webalizer.conf
+
+--- Apache monitoring using Nagios
+Install Nagios plugins for monitoring your server on a different host
+  yum -y install nagios-plugins-httpd
+Then check the content received from the server using
+  check_http!-u http://example.com/ -s "part of the expected output"
+
+--- Apache SSL hardening
+If you install SSL support, consider using the following settings in
+/etc/httpd/conf.d/ssl.conf:
+SSLProtocol all -SSLv2 -SSLv3
+SSLHonorCipherOrder on
+SSLCipherSuite "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM \
+                EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 \
+                EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 \
+                EECDH EDH+aRSA \
+                !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS !RC4"
+
+EOF
+
+

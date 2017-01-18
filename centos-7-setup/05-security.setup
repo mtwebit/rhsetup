@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# description: Security tools and settings
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20141209
+# Info: 
+#
+# References
+#   RedHat Installation Guide, Deployment Guide, Storage Admin Guide
+#   NSA Security Guide
+#   http://www.firewing1.com/howtos/servers/centos5/security_and_reliability
+#   and others mentioned below and in separate script files
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo -n "Fail2Ban (intrusion prevention system)? NOT YET SUPPORTED "
+if [ "$pp" == "yaaaaaaaa" ]; then
+  x yum -y install fail2ban-firewalld fail2ban-systemd
+  remember is_fail2ban 1
+  todos << EOF
+--- Fail2Ban ...
+See https://krash.be/node/28
+
+EOF
+fi
+
+if askif "AIDE (intrusion detection system)?" y; then
+  remember is_aide 1
+  x yum -y install aide
+  todos << EOF
+--- AIDE intrusion detection system
+Generate initial AIDE database after finishing system setup:
+  aide --init
+  mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+Move /var/lib/aide/aide.db.gz to a non-writeable, secure location
+  or encrypt its content. See:
+  http://www.falsyana.com/2012/linux/advanced-intrustion-detection-environment-aide/
+
+EOF
+  cat << EOF > /etc/cron.d/aide
+#### Check file integrity using AIDE
+05 4 * * * root /usr/sbin/aide --check
+EOF
+fi
+
+if askif "Check package integrity reguralry using rpm --verify?" n; then
+  remember is_rpmverify 1
+  echo "Installing crontab entry at /etc/cron.d/rpm-verify-all"
+  cat << EOF > /etc/cron.d/rpm-verify-all
+#### Check software integrity using rpm verify
+#S file Size differs
+#M Mode differs (includes permissions and file type)
+#5 MD5 sum differs
+#D Device major/minor number mis-match
+#L readLink(2) path mis-match
+#U User ownership differs
+#G Group ownership differs
+#T mTime differs
+0 2 * * * root rpm -qVa --nomtime | awk '\$2!="c" {print \$0}'
+EOF
+fi
+
+todos << EOF
+--- User limits
+Set limits for users: vi /etc/security/limits.conf
+  See http://www.cyberciti.biz/tips/linux-limiting-user-process.html
+
+--- Security settings
+Check and set Selinux booleans:
+  getsebool -a | less
+and set them permamnently
+  setsebool -P ...
+  see http://wiki.centos.org/TipsAndTricks/SelinuxBooleans
+If you're planning to issue certificates, edit the defaults
+  vi /etc/pki/tls/openssl.cnf
+You can turn on command history accounting:
+  yum -y install psacct
+  chkconfig psacct on; service psacct start
+  lastcomm
+
+EOF
+

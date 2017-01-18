@@ -1,0 +1,70 @@
+#!/bin/bash
+#
+# description: LDAP server
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20150601
+# Info: minimal LDAP server
+#
+# Sources
+#   http://www.server-world.info/en/note?os=CentOS_7&p=openldap&f=1
+#   http://www.certdepot.net/rhel7-configure-ldap-directory-service-user-connection/
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+# TODO quota schema from quota-doc
+
+x yum -y install openldap openldap-servers openldap-clients migrationtools ldapvi
+
+echo "Enabling LDAP service ports in the firewall..."
+addfwrule internal --add-service=ldap
+
+ask LDAP_ORG "Organization (e.g. Example Company)"
+ask LDAP_BASE "LDAP base DN (e.g. dc=example,dc=com)"
+ask LDAP_DC "LDAP base domain component (e.g. example)"
+
+ask LDAP_ADMIN_PW "LDAP admin password" ""
+shapw=`slappasswd -s ${LDAP_ADMIN_PW} -n`
+echo "The encoded version is: $shapw"
+
+x /bin/cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
+x chown -R ldap:ldap /var/lib/ldap
+x 'systemctl enable slapd && systemctl start slapd && sleep 1'
+# TODO check for success
+
+# Import basic schemas
+x 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif'
+x 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif'
+x 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
+
+# LDAP configuration TODO $shapw may contain # char?
+x "sed -i 's#SHAPASSWD#${shapw}#g' ${SETUPDIR}/files/ldapconfig.ldif"
+x "sed -i 's/BASEDN/${LDAP_BASE}/g' ${SETUPDIR}/files/ldapconfig.ldif"
+x "ldapmodify -Y EXTERNAL -H ldapi:/// -f ${SETUPDIR}/files/ldapconfig.ldif"
+
+# Base domain setup
+x "sed -i 's/BASEDN/${LDAP_BASE}/g' ${SETUPDIR}/files/ldapsetup.ldif"
+x "sed -i 's/BASEORG/${LDAP_ORG}/g' ${SETUPDIR}/files/ldapsetup.ldif"
+x "sed -i 's/BASEDC/${LDAP_DC}/g' ${SETUPDIR}/files/ldapsetup.ldif"
+x "ldapadd -x -D cn=Manager,${LDAP_BASE} -w ${LDAP_ADMIN_PW} -f ${SETUPDIR}/files/ldapsetup.ldif"
+
+#x 'slaptest 2>& >/dev/null'
+#x chown -R ldap:ldap /etc/openldap/certs /var/lib/ldap
+#x openssl req -new -x509 -nodes -out /etc/openldap/certs/cert.pem -keyout /etc/openldap/certs/private.pem -days 365
+#x chmod 600 /etc/openldap/certs/private.pem
+
+remember is_ldap_srv 1
+
+todos << EOF
+You can edit your LDAP config using ldapvi.
+  see http://www.lichteblau.com/ldapvi/manual/
+TLS is not enabled by default. You should configure it manually.
+  see http://www.server-world.info/en/note?os=CentOS_7&p=openldap&f=4
+This LDAP server should be replicated.
+  see http://www.server-world.info/en/note?os=CentOS_7&p=openldap&f=5
+
+EOF

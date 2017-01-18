@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# description: General software development tools
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20150615
+#
+# References
+#
+# TODO
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+x 'yum -y groupinstall "Development tools"'
+remember is_swdevel 1

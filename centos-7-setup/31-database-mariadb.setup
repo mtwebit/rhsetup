@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# description: MariaDB database (MySQL-compatible, recommended)
+#
+# CentOS post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20160629
+# Info: 
+#
+# References
+#   https://mariadb.org/
+#   http://mysqltuner.com/
+#   https://github.com/innotop/innotop
+#   http://fabiolocati.com/2014/08/innotop-fixed-for-mariadb-10/
+#
+# TODOs
+#   Storage engines, line tokudb
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+if askif "Use MariaDB repo (newer software but may not be fully compatible)?" y; then
+  echo "Installing MariaDB 10..."
+  cat <<EOF > "/etc/yum.repos.d/MariaDB.repo"
+# MariaDB 10.0 CentOS repository list - created 2015-01-13 10:37 UTC
+# http://mariadb.org/mariadb/repositories/
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.0/centos7-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+EOF
+  x yum -y install MariaDB-server MariaDB-client
+else
+  echo "Installing official CentOS packages..."
+  x yum -y install mariadb-server 
+fi
+
+remember is_mysql 1
+remember is_database 1
+
+echo "Installing database monitors and tuning utilities..."
+x yum -y install mysqltuner innotop
+
+if askif "Do you want to enable remote accesss (open a firewall port)?" n; then
+  addfwrule internal --add-service=mysql
+else
+  x "sed -i 's/\[mysqld\]/\[mysqld\]\nbind-address = 127.0.0.1/' /etc/my.cnf.d/server.cnf"
+fi
+
+todos <<EOF
+--- MySQL/MariaDB server
+Secure MySQL installation (IMPORTANT):
+  service mysql restart
+  mysql_secure_installation
+Adjust your MariaDB configuration
+  vi /etc/my.cnf.d/server.cnf
+Setup log rotation
+  vi /etc/logrotate.d/mariadb
+  This requires setting up a /root/.my.cnf file (but protect it with chmod).
+Monitor and analyze your server (also create /root/.my.cnf for this)
+  innotop
+  mysqlanalyzer
+Run a performance stress test using mysqlslap
+  https://www.digitalocean.com/community/tutorials/how-to-measure-mysql-query-performance-with-mysqlslap
+
+EOF
+
+# Install monitoring plugins
+if [ $is_nagios ]; then
+  echo "Installing Nagios plugins to monitor MariaDB server..."
+  x yum -y install nagios-plugins-mysql
+
+  todos <<EOF
+--- MariaDB monitoring using Nagios
+Nagios plugins for MySQL monitoring installed in /usr/lib64/nagios/plugins/
+If you have nrpe installed (nagios client):
+  vi /etc/nagios/nrpe.cfg
+and add commands for MySQL monitoring. E.g.:
+  command[mysql]=/usr/lib64/nagios/plugins/check_mysql -u USER -p PASSWORD
+
+EOF
+fi
+

@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# description: Postgresql database
+#
+# CentOS post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20150701
+# Info: 
+#
+# References
+#
+# TODOs
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+x yum -y install postgresql postgresql-server postgresql-contrib pgtune pgfouine
+remember is_postgresql 1
+remember is_database 1
+
+echo "Installing database monitors and tuning utilities..."
+x service postgresql initdb
+x systemctl restart postgresql.service
+x su - postgres -c '"createuser --createrole --superuser root"'
+x systemctl enable postgresql.service
+
+if [ ! -f /etc/sysconfig/pgsql/postgresql ]; then
+  echo "Creating missing postgresql startup options file..."
+  cat > /etc/sysconfig/pgsql/postgresql << EOF
+# Postgresql daemon options. See man postgres for more info.
+PGOPTS="-d 0"
+EOF
+fi
+
+
+if askif "Do you want to enable remote accesss (open a firewall port for postgres)?" n; then
+  addfwrule internal --add-service=postgresql
+fi
+
+todos <<EOF
+Tune postgresql configuration:
+  export PGDATA=/var/lib/pgsql/data
+  pgtune -i \${PGDATA}/postgresql.conf -o \${PGDATA}/postgresql.conf.pgtune
+  diff \${PGDATA}/postgresql.conf \${PGDATA}/postgresql.conf.pgtune
+  cp \${PGDATA}/postgresql.conf.pgtune \${PGDATA}/postgresql.conf
+  Edit the logging section (target, rotation, log_line_prefix, etc.)!
+then run service postgresql restart
+Analyze log: pgfouine.php -file \${PGDATA}/pg_log/postgresql.log > report.html
+  see http://gkoenig.wordpress.com/2009/02/19/pgfouine-dive-into-postgres-log/
+Read some interesting articles about Postgresql at http://pgmag.org
+
+EOF
+
+# Install monitoring plugins
+if [ $is_nagios ]; then
+  echo "Installing Nagios plugins to monitor the Postgresql server..."
+  x yum -y install nagios-plugins-pgsql
+
+  todos <<EOF
+--- Postgresql monitoring using Nagios
+Nagios plugins for PG monitoring installed in /usr/lib64/nagios/plugins/
+If you have nrpe installed (nagios client):
+  vi /etc/nagios/nrpe.cfg
+and add commands for monitoring. E.g.:
+  command[pgsql]=/usr/lib64/nagios/plugins/check_pgsql -u USER -p PASSWORD
+
+EOF
+fi
+

@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# description: Support for LDAP authentication (pam_ldap client)
+#
+# CentOS post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# References
+#
+# Version 20150115
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Installing and configuring nss-pam-ldapd..."
+x yum -y install nss-pam-ldapd
+ask LDAP_URI "LDAP server URI (e.g. ldaps://ip.addr/)"
+ask LDAP_SSL "USE SSL (yes for ldaps, no or start_tls for ldap)"
+ask LDAP_BASE "LDAP base DN (e.g. dc=subdomain,dc=domain)"
+
+authconfig --enableldap --enableldapauth --ldapserver=$LDAP_URI --ldapbasedn="$LDAP_BASE" --enablelocauthorize --update
+
+x "sed -i 's/^ssl no/ssl $LDAP_SSL/' /etc/nslcd.conf"
+x "sed -i 's/#tls_reqcert never/tls_reqcert never/' /etc/nslcd.conf"
+
+x systemctl restart nslcd.service nscd.service
+x systemctl status nslcd.service nscd.service
+
+remember is_auth_ldap 1
+
+todos << EOF
+--- LDAP Authentication
+Check LDAP auth settings
+  vi /etc/nslcd.conf
+Optionally install and enable the use of certificates
+  See tls_reqcert never in /etc/nslcd.conf
+
+EOF
+

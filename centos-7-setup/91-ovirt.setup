@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# description: oVirt support
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20151011
+#
+# References
+#
+# TODO list (known issues):
+#   add more dependencies like
+#     quota, rsync, etc.
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+ask OVIRT_VERSION "Which release would you like to install (e.g. release36)?" 
+
+x yum -y erase ovirt-${OVIRT_VERSION}.rpm
+x yum -y install http://resources.ovirt.org/pub/yum-repo/ovirt-${OVIRT_VERSION}.rpm
+
+echo "Checking oVirt dependencies (installable by this utility)..."
+
+if [ ! $is_nfs_srv ]; then
+  if askif "NFS is required. Install it now?" y; then
+    . *-nfs-server.setup
+  fi
+fi
+
+if [ ! $is_mdadm ]; then
+  if askif "mdadm is required. Install it now?" y; then
+    . *-mdadm.setup
+  fi
+fi
+
+if [ ! $is_postgresql ]; then
+  if askif "Postgresql is required (only by the engine). Install it now?" y; then
+    . *-database-postgresql.setup
+  fi
+fi
+  
+if [ ! $is_apache ]; then
+  if askif "Apache httpd is required (only by the engine). Install it now?" y; then
+    . *-websrv-apache.setup
+  fi
+fi
+
+x "cp -p ${SETUPDIR}/files/ovirt-*.xml /etc/firewalld/services && firewall-cmd --reload"
+
+if askif "Do you need virtio drivers and guest tools for Windows guests?" y; then
+  x yum -y install virtio-win.noarch ovirt-guest-tools-iso
+  todos << EOF
+--- Windows Virtio drivers
+Drivers for virtio devices can be found in /usr/share/virtio-win/.
+Ovirt guest tools can be found in /usr/share/ovirt-guest-tools-iso/.
+
+EOF
+fi
+
+
+
+todos << EOF
+--- ovirt
+IMPORTANT: disable selinux before installing oVirt.
+You can try to enable it after the system is working properly.
+
+oVirt $OVIRT_VERSION can be installed
+- nodes:
+  (todo)
+
+- engine:
+  (todo)
+
+- hosted engine:
+  yum install ovirt-hosted-engine-setup
+  hosted-engine --deploy
+
+The following firewall services has been created to support oVirt+firewalld
+  ovirt-node (host), ovirt-storage, ovirt-hosted-engine
+  firewall-cmd --permanent --zone=internal --add-service=ovirt-node && firewall-cmd --reload
+
+EOF
+

@@ -1,0 +1,16 @@
+#!/bin/bash
+#
+# description: Install the latest updates (essential)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20150113
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+x yum -y update
+

@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# description: Support for software RAID arrays (mdadm)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20141209
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+x yum -y install mdadm
+remember is_mdadm 1
+
+todos <<EOF
+--- Software raid using mdadm
+See
+  RHEL Storage Admin Guide
+  http://www.ducea.com/2009/03/08/mdadm-cheat-sheet/
+Review your current raid status
+  mdadm --detail --scan    or    cat /proc/mdstat
+Review the status of a raid device
+  mdadm --detail /dev/md0
+
+EOF
+

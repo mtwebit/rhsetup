@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# description: System monitoring using Nagios (client and/or server)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20141113
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Installing common nagios plugins..."
+x yum -y install nagios-plugins-users nagios-plugins-procs nagios-plugins-load.x86_64 nagios-plugins-disk.x86_64 nagios-plugins-swap.x86_64
+remember is_nagios 1
+
+if askif "Setup nagios monitoring clients (nrpe with remote server)?" y; then
+  x yum -y install nrpe nagios-plugins-users nagios-plugins-procs nagios-plugins-load.x86_64 nagios-plugins-disk.x86_64 nagios-plugins-swap.x86_64
+  remember is_nrpe 1
+  addfwrule internal --add-port=5666/tcp
+  todos <<EOF
+--- Nagios client
+Configure the remote (nrpe) interface
+  vi /etc/nagios/nrpe.cfg
+Enable and start the service
+  systemctl enable nrpe.service
+  systemctl start nrpe.service
+Install additional nagios plugins as needed
+  yum search nagios
+  or visit http://exchange.nagios.org/directory/Plugins
+For example, if you need printer monitoring:
+  yum -y install net-snmp-utils.x86_64
+  cd ...nagios-plugin-dir... (e.g. cd /usr/lib64/nagios/plugins)
+  curl -Ls -o check_snmp_printer "http://exchange.nagios.org/components/com_mtree/attachment.php?link_id=1758&cf_id=24"
+  chmod 755 check_snmp_printer
+  chcon -t nagios_services_plugin_exec_t check_snmp_printer
+  And use this command in your config:
+    define command{
+        command_name    check_snmp_printer
+        command_line    \$USER1\$/check_snmp_printer -H \$HOSTADDRESS\$ -x \$ARG1\$
+    }
+EOF
+fi
+
+echo "Nagios server is not yet supported."
+return
+TODO server
+
+After installing all plugins configure monitoring and the Web interface:
+  vi /etc/nagios/nagios.cfg /etc/nagios/cgi.cfg
+set web password: htpasswd -c /etc/nagios/passwd nagiosadmin
+create additional users if needed
+chkconfig nagios on; service nagios restart; service httpd restart
+then visit http://`hostname`/nagios/
+
+EOF
+
+fi
+

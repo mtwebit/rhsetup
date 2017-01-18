@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+    <short>ovirt-node</short>
+    <description>oVirt Node (hypervisor) services</description>
+    <port protocol="tcp" port="54321"/><!-- vdsm -->
+    <port protocol="tcp" port="16514"/><!-- libvirt tls -->
+</service>
+

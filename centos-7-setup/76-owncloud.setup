@@ -1,0 +1,121 @@
+#!/bin/bash
+#
+# description: Private cloud server (Owncloud)
+#
+# CentOS post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20150115
+# Info: 
+#
+# References
+#   http://owncloud.org/
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Please note that MySQL install is currently broken with PHP5.6+ using remo repo."
+
+if [ ! $is_database ]; then
+  echo "Owncloud requires database support (MariaDB/PostgreSQL)."
+  if askif "Do you want to install it now?" y; then
+    . *-database-*.setup
+  fi
+fi
+
+if [ ! $is_websrv ]; then
+  echo "Owncloud requires a Web server (e.g. Apache)."
+  if askif "Do you want to install it now?" y; then
+    . *-webserver-*.setup
+  fi
+fi
+
+if [ ! $is_php ]; then
+  echo "Owncloud requires PHP Support."
+  if askif "Do you want to install it now?" y; then
+    . *-php*.setup
+  fi
+fi
+
+if askif "Do you want to install and use LDAP as a user backend?" y; then
+  [ ! $is_auth_ldap ] && source *-auth*ldap*.setup
+  remember is_owncloud_ldap 1
+  extrapkgs=php-ldap
+fi
+
+[ "$PHP_REPO" != "" ] && repoextra="--enablerepo=$PHP_REPO"
+
+echo "Installing Owncloud and its dependencies from EPEL repo..."
+
+x yum --skip-broken -y $repoextra install owncloud php-exif $extrapkgs
+
+remember is_owncloud 1
+
+ask OWNCLOUD_DB_USER "Database user for Owncloud (not root)"
+askpw OWNCLOUD_DB_PASSWD "User password"
+echo "Creating database user for Owncloud..."
+
+if [ $is_mysql ]; then
+  echo "MySQL/MariaDB is installed."
+  if askif "Do you want to use it for owncloud (recommended)?" y; then
+    askpw myrootpw "Root password to connect to MySQL/MariaDB"
+    x mysql -u root -p $myrootpw << EOF
+CREATE USER '$OWNCLOUD_DB_USER'@'localhost' IDENTIFIED BY '$OWNCLOUD_DB_PASSWD';
+CREATE DATABASE IF NOT EXISTS owncloud;
+GRANT ALL PRIVILEGES ON owncloud.* TO '$OWNCLOUD_DB_USER'@'localhost' IDENTIFIED BY '$OWNCLOUD_DB_PASSWD';
+EOF
+  fi
+else
+  if [ $is_pgsql ]; then
+    echo "Postgresql is installed."
+    if askif "Do you want to use it for owncloud (recommended)?" y; then
+      # TODO ....
+    fi
+  fi
+fi
+
+todos << EOF
+--- Owncloud storage server
+Check the websrv config
+  vi /etc/httpd/conf.d/owncloud.conf
+  - set accesss rules, it is disabled by default
+    add "Require host ...." or "Require ip ..."
+Then visit your owncloud Web page (e.g. http://${IPADDR}/owncloud/)
+  Select the database provider then specify connection details
+  and finish the setup (see /usr/share/doc/owncloud*/*)
+Finish configuration and installation steps following Owncloud docs
+  http://doc.owncloud.org/
+To edit LibreOffice documents you may consider collabora online
+  You can run it in a docker container: https://nextcloud.com/collaboraonline/
+  docker create --name collabora -p 127.0.0.1:9980:9980 -e "domain=share.mit.bme.hu" --cap-add MKNOD collabora/code
+  docker start collabora; docker stop collabora
+
+EOF
+
+if [ $is_owncloud_ldap ]; then
+todos << EOF
+--- Owncloud with LDAP auth
+LDAP auth uses php-ldap to authenticate using an LDAP server.
+Verify that your LDAP client config is working, especially check this file
+  vi /etc/openldap/ldap.conf
+If you're using SSL or TLS setting up working certificates for php is a must.
+Or... you can specify "TLS_REQCERT never" in ldap.conf
+These are typical LDAP settings (specify these using the Admin's Web GUI):
+  ldap_group_filter objectClass=posixGroup
+  User list filter  (|(gidNumber=100)(gidNumber=101))
+  ldap_display_name uid
+  ldap_group_display_name cn
+  ldap_group_member_assoc_attribute memberUid
+
+EOF
+fi
+
+if [ $is_php_fpm ]; then
+todos << EOF
+--- Owncloud with php-fpm
+Owncloud is using (and its package depends on) mod_php.
+You have to modify the httpd config in order to switch to php-fpm.
+
+EOF
+fi

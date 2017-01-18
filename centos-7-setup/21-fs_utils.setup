@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# description: Basic disk and filesystem utilities (essential)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20141209
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Installing lsof and tmpwatch...."
+x yum -y install lsof tmpwatch
+
+todos <<EOF
+--- Filesystem settings
+Align your partitions according to disk properties
+  http://www.thomas-krenn.com/en/wiki/Partition_Alignment
+  (Well, this might be a bit late to say, but it greatly affects performance.)
+To tune your filesystem settings:
+  http://busybox.net/~aldot/mkfs_stride.html
+Consider disabling Write Barriers if possible using the -o nobarrier mount opt.
+  E.g. NFS clients should not use WBs.
+  See RHEL Storage Admin Guide
+Consider using noatime or relatime mount options where possible.
+  See man mount
+If you use (software) RAID devices, check them regularly.
+  vi /etc/sysconfig/raid-check
+
+EOF
+

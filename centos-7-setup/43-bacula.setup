@@ -1,0 +1,77 @@
+#!/bin/bash
+#
+# description: Bacula backup tools (Bacula client, storage, director)
+#
+# CentOS post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# References
+#
+# Version 20150812
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+if askif "Install Bacula client?" y; then
+  x yum -y install bacula-client
+  remember is_bacula_fd 1
+  if askif "Allow remote accesss (open a firewall port)?" y; then
+    addfwrule internal --add-port=9102/tcp
+  fi
+
+  todos << EOF
+--- Bacula backup client
+Configure Bacula File Daemon
+  vi /etc/bacula/bacula-fd.conf
+then run
+  systemctl enable bacula-fd.service && systemctl restart bacula-fd.service
+
+EOF
+fi
+
+
+if askif "Install Bacula storage daemon?" y; then
+  x yum -y install bacula-storage
+  remember is_bacula_sd 1
+  if askif "Allow remote accesss (open a firewall port)?" y; then
+    addfwrule internal --add-port=9103/tcp
+  fi
+
+  todos << EOF
+--- Bacula Storage
+Configure Bacula Storage Daemon
+  vi /etc/bacula/bacula-sd.conf
+then run
+  systemctl enable bacula-sd.service && systemctl restart bacula-sd.service
+
+EOF
+fi
+
+
+if askif "Install Bacula director and console?" y; then
+  if [ ! $is_database ]; then
+    if askif "A database is required by the engine. Install PostgreSQL?" y; then
+      . *-database-postgresql.setup
+    fi
+  fi
+  x yum -y install bacula-director bacula-console
+  remember is_bacula_dir 1
+  if askif "Allow remote accesss (open a firewall port)?" n; then
+    addfwrule internal --add-port=9101/tcp
+  fi
+
+  todos << EOF
+--- Bacula Director
+Create database tables:
+  /usr/libexec/bacula/create_bacula_database
+  /usr/libexec/bacula/make_bacula_tables
+  /usr/libexec/bacula/grant_bacula_privileges
+Configure Bacula Storage Daemon
+  vi /etc/bacula/bacula-dir.conf
+then run
+  systemctl enable bacula-sd.service && systemctl restart bacula-sd.service
+
+EOF
+fi

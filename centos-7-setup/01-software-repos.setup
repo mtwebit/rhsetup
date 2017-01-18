@@ -1,0 +1,94 @@
+#!/bin/bash
+#
+# description: Software repositories and yum plugins (essential)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20151130
+#
+# Info: Installs and enables the EPEL, REMI, ELREPO and CentOSPlus yum repos.
+# Info: RPMForge will also be installed but disabled.
+# Info: Also enables displaying architecture info in rpm queries.
+#
+# References
+#   RedHat Installation Guide, Deployment Guide, Storage Admin Guide
+#   NSA Security Guide
+#   http://www.firewing1.com/howtos/servers/centos5/security_and_reliability
+#   and others mentioned below and in separate script files
+#
+# TODO list (known issues):
+#   - not all commands are logged in the logfile
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Installing YUM plugins and deltarpm"
+yum clean all > /dev/null
+# mirror.centos.org likes to hide in the DNS jungle, wake it up
+ping -q -c 1 mirror.centos.org 2>&1 >/dev/null
+x rpm --import http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-7
+x yum -y install yum-plugin-changelog yum-plugin-ps yum-plugin-verify yum-presto yum-plugin-aliases yum-plugin-security yum-utils yum-plugin-priorities yum-plugin-fastestmirror deltarpm
+echo "Setting up software repositories"
+echo "EPEL: Extra Packages for Enterprise Linux (enabled)."
+x rpm --import https://fedoraproject.org/static/0608B895.txt
+x yum -y install http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-7.noarch.rpm
+echo "REMI: additional software for EL by Remi (enabled)."
+x rpm --import http://rpms.famillecollet.com/RPM-GPG-KEY-remi
+x yum -y install http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
+x "yum-config-manager --enable remi >/dev/null"
+echo "RepoForge (RPMForge): additional software for EL (disabled)."
+x rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt
+x yum -y install http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm
+x "yum-config-manager --disable rpmforge > /dev/null"
+echo "Elrepo: additional hardware drivers and utilities (enabled)."
+x rpm --import http://elrepo.org/RPM-GPG-KEY-elrepo.org
+x yum -y install http://www.elrepo.org/elrepo-release-7.0-2.el7.elrepo.noarch.rpm
+x "yum-config-manager --enable elrepo > /dev/null"
+echo "CentOSPlus: centos-patched kernels (enabled)."
+x "yum-config-manager --enable centosplus > /dev/null"
+echo "LUX-HAT: collection of useful network and sysadmin stuff (disabled)."
+x "rpm --import http://repo.iotti.biz/RPM-GPG-KEY-LUX"
+x "curl -Lso /etc/yum.repos.d/centos-lux-hat.repo http://repo.iotti.biz/centos-lux-hat.repo"
+x "yum-config-manager --disable lux-hat > /dev/null"
+
+todos <<EOF
+--- Package repositories and installed software
+List available repos: yum repolist all
+Enable/disable repos: yum-config-manager --enable ...
+  EPEL and RPMFORGE may conflict, the later is disabled by this script.
+Set priorities to protect packages: vi /etc/yum.repos.d/*
+  see http://wiki.centos.org/PackageManagement/Yum/Priorities
+Review available software groups to install: yum grouplist | less
+Check keys: rpm -q gpg-pubkey --qf "%{summary} ->%{version}-%{release}\n"
+Check non-CentOS packages: rpm -qa --qf "%{NAME} %{VENDOR}\n" | grep -v CentOS
+
+EOF
+
+case "${MANUFACTURER}" in
+HP)
+  x mkdir -p /root/bin
+  echo "HP software tools (repository installer)."
+  x "curl -Lso /root/bin/add_hp_repo.sh http://downloads.linux.hp.com/SDR/add_repo.sh"
+  x "chmod 700 /root/bin/add_hp_repo.sh"
+  todos <<EOF
+--- HP software tools
+You can install HP software tools from their yum repositories.
+See
+  http://downloads.linux.hpe.com/
+To install repositories (for example)
+  /root/bin/add_hp_repo.sh -d RedHat -r ${OSVER} spp
+  /root/bin/add_hp_repo.sh -d CentOS -r ${OSVER} mcp
+To query their content (for example)
+  yum --disablerepo="*" --enablerepo="HP-spp" list available
+
+EOF
+  ;;
+esac
+
+# RPM and YUM tweaks, see http://wiki.centos.org/TipsAndTricks/YumAndRPM
+# Getting rpm to display architecture
+echo "RPM tweaks in ~/.rpmmacros"
+echo "%_query_all_fmt %%{name}-%%{version}-%%{release}.%%{arch}" >> ~/.rpmmacros
+

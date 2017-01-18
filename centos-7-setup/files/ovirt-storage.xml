@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+    <short>ovirt-storage</short>
+    <description>oVirt Storage service ports</description>
+    <port protocol="tcp" port="39543"/><!-- Red Hat Storage-Console status -->
+    <port protocol="tcp" port="55863"/><!-- Red Hat Storage-Console status -->
+</service>
+

@@ -1,0 +1,239 @@
+#!/bin/bash
+#
+# RedHat/CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20141215
+#
+# References
+#   RedHat Installation Guide, Deployment Guide, Storage Admin Guide
+#   NSA Security Guide
+#   http://www.firewing1.com/howtos/servers/centos5/security_and_reliability
+#   http://www.server-world.info/en/
+#   and others mentioned below and in separate script files
+#
+# TODO list (known issues):
+#   - not all commands are logged in the logfile
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+# Base directory to store files
+SETUPDIR=/root/post-install
+# Other locations used by the install scripts
+LOG=${SETUPDIR}/customizations.log
+STATDIR=${SETUPDIR}/status
+VARS=${STATDIR}/variables
+FWRULESDIR=${SETUPDIR}/firewall-rules
+mkdir -p ${SETUPDIR} ${FWRULESDIR} ${STATDIR}
+
+cd ${SETUPDIR}
+cat <<EOF
+--- RHSETUP: A collection of Redhat/CentOS/Fedora post install scripts. ------
+EOF
+echo -n "Gathering system information..."
+
+if [ ! -x /usr/bin/rpm ]; then
+  echo Error.
+  echo Only rpm-based distributions are supported. Exiting...
+  exit
+fi
+ARCH=$(arch)
+RELEASE=$(rpm -q centos-release fedora-release redhat-release | grep -v "not installed")
+# OS vendor (centos, redhat, fedora, etc.)
+OS=$(echo ${RELEASE} | cut -d"-" -f 1)
+# this is the major version number (e.g. 6)
+OSMAJOR=$(echo ${RELEASE} | cut -d"-" -f 3)
+# this is the version number (e.g. 6-3)
+OSMINOR=$(echo ${RELEASE} | cut -d"-" -f 4 | cut -d. -f 1)
+# this is the version number (e.g. 6.3)
+OSVER=${OSMAJOR}.${OSMINOR}
+
+if [ "${OS}${OSVER}" == "" ]; then
+  echo "Error."
+  echo "Unable to determine OS version."
+  echo "Got: ${RELEASE} ${OS} ${OSVER}"
+  exit 1
+fi
+
+# Full name of the current timezone
+TZNAME=$(readlink /etc/localtime | cut -d / --complement -f -4)
+
+NETDEV=$(ip route show |grep "default "|awk '{print $5}')
+IPZONE=$(ip addr show ${NETDEV}|grep "inet "|awk '{print $2}')
+IPADDR=$(echo $IPZONE | cut -d/ -f 1)
+# set hostname and network mask
+eval $(ipcalc --silent --hostname --netmask --network $IPZONE)
+
+if [ ! -x /usr/sbin/dmidecode ]; then
+  yum -y install dmidecode 2>&1 >/dev/null
+fi
+
+if [ -x /usr/sbin/dmidecode ]; then
+  MANUFACTURER=$(dmidecode -s system-manufacturer)
+  PRODUCT=$(dmidecode -s system-product-name)
+  SERIAL=$(dmidecode -s system-serial-number)
+else
+  MANUFACTURER=unknown
+  PRODUCT=unknown
+  SERIAL=unknown
+fi
+
+echo "Done."
+
+cat << EOF
+--- SYSTEM INFO --------------------------------------------------------------
+Hostname    : $HOSTNAME
+Manufacturer: $MANUFACTURER
+Product name: $PRODUCT
+Serial      : $SERIAL
+Distro      : ${OS} ${OSVER}
+Timezone    : $TZNAME
+IP address  : $IPADDR ($NETDEV)
+Network     : $IPZONE
+------------------------------------------------------------------------------
+EOF
+echo -n "Downloading setup scripts for this distro..."
+
+SFILES=${OS}-${OSMAJOR}-setup.tar.gz
+
+curl -sf -o ${SFILES} http://blog.mit.bme.hu/meszaros/${SFILES}
+if [ $? -ne 0 ]; then
+  echo "This OS version (${OS}-${OSMAJOR}) is not supported. Exiting..."
+  exit 1
+fi
+
+# Erase old setup files
+\rm -r ${OS}-${OSMAJOR}-setup 2>/dev/null
+tar xzf ${SFILES}
+# Moving patches to a separate location
+\rm -r patches 2> /dev/null
+mv ${OS}-${OSMAJOR}-setup/patches .
+
+cd ${OS}-${OSMAJOR}-setup
+. .progress_bar.sh
+. .functions.sh
+
+# trap keyboard interrupt (control-c)
+trap killme SIGINT
+
+SCRIPTS=$(ls *.setup)
+NSCRIPTS=$(ls *.setup | wc -l)
+
+echo "${NSCRIPTS} found."
+
+if askif "Do you want to list the available setup scripts?" n; then
+  echo "---- Available setup tools supported by ${OS} ${OSMAJOR} -----------------------------"
+  for i in `ls [0-9][0-9]-*.setup`; do
+    grep '# description: ' $i | cut -d: -f 2
+  done
+  echo "------------------------------------------------------------------------------"
+  echo -n "Press enter: "
+  read pp
+fi
+
+touch ${LOG}
+
+clear
+cat <<EOF
+##############################################################################
+                  Redhat/CentOS/Fedora post install scripts
+##############################################################################
+
+--- !!! WARNING !!! ----------------------------------------------------------
+This program modifies system files and installs applications on your command.
+There's no warranty. Backup your system and use this utility at your own risk!
+------------------------------------------------------------------------------
+New setup scripts and error reports should be sent to <meszaros@mit.bme.hu>.
+
+In order to monitor what this script is doing open a new session to this
+machine (${IPADDR}) and issue the following command:
+  tail -f ${LOG}
+
+Installing is not everything. The scripts will do some config work but you'll
+need to review and finalize the software configurations. A list of TODOs
+will be placed in ${STATDIR} for each installed application.
+
+If you mess up anything, just press 'x' and start over.
+Most scripts will work if you run them again (after deleting their stat file).
+------------------------------------------------------------------------------
+EOF
+
+sleep 2
+
+if askif "Ready?" n; then
+  cat <<EOF >>${LOG}
+#############################################################################
+#              Detailed log of the rhsetup post install scripts             #
+#############################################################################
+Run at `date` by `whoami` [`id -u --real`]
+
+EOF
+else
+  exit
+fi
+
+cat <<EOF
+
+Select the setup scripts you wish to execute.
+
+Excluding scripts that have been already executed.
+Most of them are safe to run again but check the source before trying!
+Remove the appropriate status file to include them again.
+
+Special answers:
+x - stop
+i - display more info about what will be done
+
+EOF
+
+# load prevous answers (installed software)
+if [ -f ${VARS} ]; then
+  . ${VARS}
+  # since we've already run the scripts, the default answer will be no
+  defans=n
+else
+  defans=y
+fi
+
+
+for i in `ls [0-9][0-9]-*.setup`; do
+  if [ -f ${STATDIR}/${i} ]; then
+     echo "${i} already run."
+     continue
+  fi
+  echo -n ">>> `grep '# description: ' $i | cut -d: -f 2` [${defans}] "
+  read pp
+  if [ "${pp}" == "x" ]; then
+    # exit from the loop
+    break
+  fi
+  while [ "${pp}" == "i" ]; do
+    grep '^# info: ' $i | cut -d: -f 2- 
+    echo -n ">>> `grep '# description: ' $i | cut -d: -f 2` [${defans}] "
+    read pp
+  done
+  if [ "${pp}" == "" ]; then
+    # use the default answer
+    pp=$defans
+  fi
+  if [ ${pp} == y ]; then
+    rhscript=$i
+    # todo file written by the script
+    TODO=${STATDIR}/${rhscript}
+    grep "Version " "$i" >> ${TODO}
+    cat << EOF >> ${TODO}
+# run at `date`
+
+EOF
+    . $i
+  fi
+done
+
+echo "***************************"
+echo "******** Finished. ********"
+echo "***************************"
+
+echo "##########################################################################" >> ${LOG}
+

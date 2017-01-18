@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# description: Shell customizations (aliases, command completition, etc.)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20141113
+# Info: 
+#
+# References
+#   RedHat Installation Guide, Deployment Guide, Storage Admin Guide
+#   NSA Security Guide
+#   http://www.firewing1.com/howtos/servers/centos5/security_and_reliability
+#   and others mentioned below and in separate script files
+#
+# TODO list (known issues):
+#   - not all commands are logged in the logfile
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Installing Bash command completition...."
+x yum -y install bash-completion
+
+echo "Customizing shell settings (command aliases, automated logout, etc.)..."
+cat <<EOF >/etc/profile.d/custom.sh
+# Can not alter the name of the history file
+readonly HISTFILE
+readonly HISTFILESIZE
+# Set up some history stuff
+shopt -s histappend cmdhist checkwinsize 
+
+# aliases
+alias vi=vim
+
+EOF
+
+x chmod 755 /etc/profile.d/custom.sh
+

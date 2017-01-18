@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# description: DHCP server
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20141113
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Installing dhcp service..."
+x yum -y install dhcp
+remember is_dhcpd 1
+x "sed -i 's/DHCPDARGS=$/DHCPDARGS=${NETDEV}/' /etc/sysconfig/dhcpd"
+echo "Adding dhcp service to the firewall config..."
+addfwrule internal --add-service=dhcp
+todos <<EOF
+--- DHCP Server
+Configure DHCP: vi /etc/dhcp/dhcpd.conf
+See RHEL Deployment Guide Chapter 12.
+then run: chkconfig dhcpd on; service dhcpd restart
+You can also use omshell to manage dhcpd.
+
+EOF

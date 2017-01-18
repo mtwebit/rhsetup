@@ -1,0 +1,73 @@
+#!/bin/bash
+#
+# description: Docker container virtualization
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20160203
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Installing docker service..."
+cat <<-'EOF' > /etc/yum.repos.d/docker.repo
+[dockerrepo]
+name=Docker Repository
+baseurl=https://yum.dockerproject.org/repo/main/centos/\$releasever/
+enabled=1
+gpgcheck=1
+gpgkey=https://yum.dockerproject.org/gpg
+EOF
+
+x yum -y install docker-engine
+
+# Fix for discourse
+x ln -fs /usr/bin/docker /usr/bin/docker.io
+# A small utility to generate hostnames
+if [ ! -x /root/bin ]; then
+  x mkdir /root/bin
+fi
+x curl -Os https://raw.githubusercontent.com/mtwebit/docker-helpers/master/DockerInfo.sh && chmod 700 DockerInfo.sh
+x curl -Os https://raw.githubusercontent.com/mtwebit/docker-helpers/master/CreateWeb.sh && chmod 700 CreateWeb.sh
+
+remember is_docker 1
+
+todos <<EOF
+--- Docker engine
+Enable and start the engine
+  systemctl enable docker && systemctl start docker
+You may want to symlink /var/lib/docker/containers to a large storage area
+  cd /var/lib/docker/
+  mv containers/ /storage/docker-containers
+  ln -s /storage/docker-containers containers
+Optionally verify the installation
+  docker run hello-world
+Helper scripts in /root/bin
+  DockerInfo.sh - prints various information about docker containers
+  CreateWeb.sh - creates new docker containers for servicing Web content
+EOF
+
+# Install monitoring plugins
+if [ $is_nagios ]; then
+  echo "Installing a Nagios plugin to monitor the Docker server..."
+  x yum -y install pyhton34 # required by the check_docker plugin
+  x curl -Lso /usr/lib64/nagios/plugins/check_docker.py "https://raw.githubusercontent.com/timdaman/check_docker/master/check_docker.py"
+  x chown nagios.nrpe /usr/lib64/nagios/plugins/check_docker.py
+  x chmod 550 /usr/lib64/nagios/plugins/check_docker.py
+  x restorecon -R /usr/lib64/nagios/plugins/
+  echo "Adding nagios and nrpe to the group of Docker users..."
+  x usermod -G docker nrpe
+  x usermod -G docker nagion
+  todos <<EOF
+--- Nagios monitoring for Docker
+Use check_docker.py to monitor your Docker server and containers.
+  See https://exchange.nagios.org/directory/Plugins/Software/Check-Docker/details
+E.g. for nrpe:
+  command[docker_dresolver]=/usr/lib64/nagios/plugins/check_docker.py --containers dresolver --status running
+
+EOF
+fi
+

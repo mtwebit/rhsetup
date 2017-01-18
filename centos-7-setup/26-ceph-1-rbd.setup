@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+# description: Client support for Ceph rbd block Storage (kernel modules only)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#
+# Version 20160630
+# Info: 
+#
+# References
+#   http://cephnotes.ksperis.com/blog/2014/01/09/map-rbd-kernel-without-install-ceph-common
+#   https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-bus-rbd
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+# No need to install them with RHEL 7.1
+#echo "Installing kernel modules from Ceph repo (kmod-rbd, kmod-ceph)."
+#x yum -y install https://ceph.com/rpm-testing/rhel7/x86_64/kmod-rbd-3.10-0.1.20140702gitdc9ac62.el7.x86_64.rpm https://ceph.com/rpm-testing/rhel7/x86_64/kmod-libceph-3.10-0.1.20140702gitdc9ac62.el7.x86_64.rpm
+x modprobe rbd
+x mkdir -p /root/bin
+echo "Installing a ceph mount utility to /root/bin/rbd-create-mount.sh."
+x cp -p ${SETUPDIR}/files/rbd-create-mount.sh /root/bin
+
+remember is_ceph_rbd 1
+
+todos <<EOF
+--- Ceph Storage client setup (kmod-rbd)
+This machine is ready to be used as a ceph client.
+(Note: Ceph utilities and config files were not installed.)
+You can use the rbd-create-mount.sh utility to mount Ceph block devices.
+
+EOF
+
+# Install monitoring plugins
+if [ $is_nagios ]; then
+  echo "Installing Nagios plugin to monitor RBD mappings..."
+  x cp -p ${SETUPDIR}/files/check_rbd_mapped.sh /usr/lib64/nagios/plugins
+
+  todos <<EOF
+--- Monitoring RBD mappings using Nagios
+Nagios plugin installed in /usr/lib64/nagios/plugins/
+If you have nrpe installed (nagios client):
+  vi /etc/nagios/nrpe.cfg
+and add commands for monitoring. E.g.:
+  command[rbd0]=/usr/lib64/nagios/plugins/check_rbd_mapped.sh -p pool -i image
+
+EOF
+fi

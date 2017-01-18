@@ -1,0 +1,20 @@
+dn: BASEDN
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: BASEORG
+dc: BASEDC
+
+dn: cn=Manager,BASEDN
+objectClass: organizationalRole
+cn: Manager
+description: Directory Manager
+
+dn: ou=People,BASEDN
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Group,BASEDN
+objectClass: organizationalUnit
+ou: Group
+
