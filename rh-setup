@@ -103,7 +103,7 @@ fi
 tar xzf ${SFILES}
 
 # Rename the extracted directory
-mv rhsetup-${OS}-${OSMAJOR}-setup ${OS}-${OSMAJOR}-setup
+mv rhsetup-${OS}-${OSMAJOR}-setup/${OS}-${OSMAJOR}-setup .
 
 # Moving files to a separate location
 mv ${OS}-${OSMAJOR}-setup/files .
