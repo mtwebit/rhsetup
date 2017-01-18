@@ -90,7 +90,7 @@ echo -n "Downloading setup scripts for this distro..."
 SFILES=${OS}-${OSMAJOR}-setup.tar.gz
 
 curl -sf -o ${SFILES} https://github.com/mtwebit/rhsetup/archive/${SFILES}
-if [ $? -ne 0 ]; then
+if [ ! -f ${SFILES} ]; then
   echo "This OS version (${OS}-${OSMAJOR}) is not supported. Exiting..."
   exit 1
 fi
