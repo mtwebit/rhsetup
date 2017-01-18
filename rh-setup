@@ -97,9 +97,12 @@ fi
 
 # Erase old setup files
 \rm -r ${OS}-${OSMAJOR}-setup 2>/dev/null
-tar xzf ${SFILES}
-# Moving files to a separate location
 \rm -r files 2> /dev/null
+# extract the archive
+tar xzf ${SFILES}
+# Rename the extracted directory
+mv rhsetup-${OS}-${OSMAJOR}-setup ${OS}-${OSMAJOR}-setup
+# Moving files to a separate location
 mv ${OS}-${OSMAJOR}-setup/files .
 
 cd ${OS}-${OSMAJOR}-setup
