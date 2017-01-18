@@ -98,9 +98,9 @@ fi
 # Erase old setup files
 \rm -r ${OS}-${OSMAJOR}-setup 2>/dev/null
 tar xzf ${SFILES}
-# Moving patches to a separate location
-\rm -r patches 2> /dev/null
-mv ${OS}-${OSMAJOR}-setup/patches .
+# Moving files to a separate location
+\rm -r files 2> /dev/null
+mv ${OS}-${OSMAJOR}-setup/files .
 
 cd ${OS}-${OSMAJOR}-setup
 . .progress_bar.sh
