@@ -5,9 +5,6 @@
 # CentOS/Fedora post install customization utility
 #   created by Tamas Meszaros <meszaros@mit.bme.hu>
 #
-# Version 20160124
-# Info: 
-#
 # This script can be freely distributed and modified under GPLv2.
 # See http://www.gnu.org/licenses/gpl-2.0.html
 #
@@ -36,6 +33,7 @@ fi
 if askif "Do you want to specify any other zone binding?" n; then
   echo -n "Zone name (`firewall-cmd --get-zones`): "
   read fwzone
+  firewall-cmd --permanent --new-zone $fwzone
   echo -n "IP address range to bind to that zone: "
   read iprange
   addfwrule $fwzone --add-source=$iprange
