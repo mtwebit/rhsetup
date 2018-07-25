@@ -31,7 +31,6 @@ if [ ! -x /root/bin ]; then
   x mkdir /root/bin
 fi
 x curl -Os https://raw.githubusercontent.com/mtwebit/docker-helpers/master/DockerInfo.sh && chmod 700 DockerInfo.sh
-x curl -Os https://raw.githubusercontent.com/mtwebit/docker-helpers/master/CreateWeb.sh && chmod 700 CreateWeb.sh
 
 remember is_docker 1
 
@@ -53,7 +52,7 @@ EOF
 # Install monitoring plugins
 if [ $is_nagios ]; then
   echo "Installing a Nagios plugin to monitor the Docker server..."
-  x yum -y install pyhton34 # required by the check_docker plugin
+  x yum -y install python34 # required by the check_docker plugin
   x curl -Lso /usr/lib64/nagios/plugins/check_docker.py "https://raw.githubusercontent.com/timdaman/check_docker/master/check_docker.py"
   x chown nagios.nrpe /usr/lib64/nagios/plugins/check_docker.py
   x chmod 550 /usr/lib64/nagios/plugins/check_docker.py
