@@ -59,7 +59,7 @@ if [ $is_nagios ]; then
   x restorecon -R /usr/lib64/nagios/plugins/
   echo "Adding nagios and nrpe to the group of Docker users..."
   x usermod -G docker nrpe
-  x usermod -G docker nagion
+  x usermod -G docker nagios
   todos <<EOF
 --- Nagios monitoring for Docker
 Use check_docker.py to monitor your Docker server and containers.
