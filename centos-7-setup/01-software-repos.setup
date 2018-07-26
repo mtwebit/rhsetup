@@ -36,8 +36,8 @@ echo "EPEL: Extra Packages for Enterprise Linux (enabled)."
 #x yum -y install http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-7.noarch.rpm
 x yum -y install epel-release
 echo "REMI: additional software for EL by Remi (enabled)."
-x rpm --import http://rpms.famillecollet.com/RPM-GPG-KEY-remi
-x yum -y install http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
+#x rpm --import http://rpms.famillecollet.com/RPM-GPG-KEY-remi
+x yum -y install https://rpms.remirepo.net/enterprise/remi-release-7.rpm
 x "yum-config-manager --enable remi >/dev/null"
 echo "RepoForge (RPMForge): additional software for EL (disabled)."
 x rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt
