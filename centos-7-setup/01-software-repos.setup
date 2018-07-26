@@ -45,7 +45,7 @@ x yum -y install http://repository.it4i.cz/mirrors/repoforge/redhat/el7/en/x86_6
 x "yum-config-manager --disable rpmforge > /dev/null"
 echo "Elrepo: additional hardware drivers and utilities (enabled)."
 x rpm --import http://elrepo.org/RPM-GPG-KEY-elrepo.org
-x yum -y install http://www.elrepo.org/elrepo-release-7.0-2.el7.elrepo.noarch.rpm
+x yum -y install http://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm
 x "yum-config-manager --enable elrepo > /dev/null"
 echo "CentOSPlus: centos-patched kernels (enabled)."
 x "yum-config-manager --enable centosplus > /dev/null"
