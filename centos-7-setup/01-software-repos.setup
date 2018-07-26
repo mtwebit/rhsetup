@@ -40,7 +40,7 @@ echo "REMI: additional software for EL by Remi (enabled)."
 x yum -y install https://rpms.remirepo.net/enterprise/remi-release-7.rpm
 x "yum-config-manager --enable remi >/dev/null"
 echo "RepoForge (RPMForge): additional software for EL (disabled)."
-x rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt
+# x rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt
 x yum -y install http://repository.it4i.cz/mirrors/repoforge/redhat/el7/en/x86_64/rpmforge/RPMS/rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm
 x "yum-config-manager --disable rpmforge > /dev/null"
 echo "Elrepo: additional hardware drivers and utilities (enabled)."
