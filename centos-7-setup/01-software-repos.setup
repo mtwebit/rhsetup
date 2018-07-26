@@ -26,6 +26,7 @@
 
 echo "Installing YUM plugins and deltarpm"
 yum clean all > /dev/null
+x yum erase -y rpmforge-release remi-relase 2>&1 >/dev/null
 # mirror.centos.org likes to hide in the DNS jungle, wake it up
 ping -q -c 1 mirror.centos.org 2>&1 >/dev/null
 x rpm --import http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-7
