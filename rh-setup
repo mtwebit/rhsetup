@@ -87,29 +87,29 @@ Network     : $IPZONE
 EOF
 echo -n "Downloading setup scripts for this distro..."
 
-SFILES=${OS}-${OSMAJOR}-setup.tar.gz
-
-curl -Lsf -o ${SFILES} https://github.com/mtwebit/rhsetup/archive/${SFILES}
-if [ ! -f ${SFILES} ]; then
-  echo "This OS version (${OS}-${OSMAJOR}) is not supported. Exiting..."
-  exit 1
-fi
+# This does not work any more
+# SFILES=${OS}-${OSMAJOR}-setup.tar.gz
+# curl -Lsf -o ${SFILES} https://github.com/mtwebit/rhsetup/archive/${SFILES}
+# if [ ! -f ${SFILES} ]; then
+#   echo "This OS version (${OS}-${OSMAJOR}) is not supported. Exiting..."
+#   exit 1
+# fi
 
 # Erase old setup files
-\rm -r ${OS}-${OSMAJOR}-setup 2>/dev/null
-\rm -r files 2> /dev/null
+\rm -r mtwebit-rhsetup-*/${OS}-${OSMAJOR}-setup 2>/dev/null
 
+# No longer needed:
 # extract the archive
-tar xzf ${SFILES}
-
+# tar xzf ${SFILES}
 # Rename the extracted directory
-mv rhsetup-${OS}-${OSMAJOR}-setup/${OS}-${OSMAJOR}-setup .
-
+# mv rhsetup-${OS}-${OSMAJOR}-setup/${OS}-${OSMAJOR}-setup .
 # Moving files to a separate location
-mv ${OS}-${OSMAJOR}-setup/files .
+# mv ${OS}-${OSMAJOR}-setup/files .
 
-cd ${OS}-${OSMAJOR}-setup
-. .progress_bar.sh
+curl -Lsf https://github.com/mtwebit/rhsetup/tarball/master | tar xz mtwebit-rhsetup-\*/${OS}-${OSMAJOR}-setup/
+
+cd mtwebit-rhsetup-\*/${OS}-${OSMAJOR}-setup
+[ -f .progress_bar ] && .progress_bar.sh
 . .functions.sh
 
 # trap keyboard interrupt (control-c)
