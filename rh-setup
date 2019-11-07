@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # RedHat/CentOS/Fedora post install customization utility
-#   created by Tamas Meszaros <meszaros@mit.bme.hu>
+#   created by Tamas Meszaros <mt+git@webit.hu>
 #
 # References
 #   RedHat Installation Guide, Deployment Guide, Storage Admin Guide
