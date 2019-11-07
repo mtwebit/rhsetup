@@ -112,7 +112,7 @@ if [ ! -d mtwebit-rhsetup-*/${OS}-${OSMAJOR}-setup/ ]; then
   exit 1
 fi
 
-cd mtwebit-rhsetup-\*/${OS}-${OSMAJOR}-setup
+cd mtwebit-rhsetup-*/${OS}-${OSMAJOR}-setup
 [ -f .progress_bar ] && .progress_bar.sh
 . .functions.sh
 
