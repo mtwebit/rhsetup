@@ -35,7 +35,7 @@ RELEASE=$(rpm -q centos-release fedora-release redhat-release | grep -v "not ins
 # OS vendor (centos, redhat, fedora, etc.)
 OS=$(echo ${RELEASE} | cut -d"-" -f 1)
 # this is the major version number (e.g. 6)
-OSMAJOR=$(echo ${RELEASE} | cut -d"-" -f 3)
+OSMAJOR=$(echo ${RELEASE} | cut -d"-" -f 3 | cut -d. -f 1)
 # this is the version number (e.g. 6-3)
 OSMINOR=$(echo ${RELEASE} | cut -d"-" -f 4 | cut -d. -f 1)
 # this is the version number (e.g. 6.3)
