@@ -107,6 +107,10 @@ echo -n "Downloading setup scripts for this distro..."
 # mv ${OS}-${OSMAJOR}-setup/files .
 
 curl -Lsf https://github.com/mtwebit/rhsetup/tarball/master | tar xz mtwebit-rhsetup-\*/${OS}-${OSMAJOR}-setup/
+if [ ! -d mtwebit-rhsetup-*/${OS}-${OSMAJOR}-setup/ ]; then
+  echo "This OS version (${OS}-${OSMAJOR}) is not supported. Exiting..."
+  exit 1
+fi
 
 cd mtwebit-rhsetup-\*/${OS}-${OSMAJOR}-setup
 [ -f .progress_bar ] && .progress_bar.sh
