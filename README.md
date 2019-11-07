@@ -11,7 +11,7 @@ Log in as root and issue the following command:
 <code>bash &lt;(curl -Ls https://raw.githubusercontent.com/mtwebit/rhsetup/master/rh-setup)</code>  
 Follow the instructions :)
 
-## Main features
+## Main features for RHEL 7
 * Installs popular package repos (EPEL, REMI etc.)  
 * Offers easy installation and semi-automatic cusomization of several applications and utilities like cloud storage, webmail, Shibboleth, iSCSI, inotify, etc. (see below)  
 * Provides a detailed list of TODOs and recommendations based on the installed applications  
@@ -19,5 +19,5 @@ Follow the instructions :)
 * Everything will work with SELinux set to enforced.  
 * Offers many security-related settings and tips to harden your setup  
 
-## What's included
-See the various branches of this repo.
+## Main features for RHEL 8  
+We switched to a container-based setup so only some basic stuff is here.
