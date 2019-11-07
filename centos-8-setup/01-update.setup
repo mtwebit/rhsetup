@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# description: Software update (essential)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <mt+git@webit.hu>
+#
+# Version 20191107
+
+yum -y update
