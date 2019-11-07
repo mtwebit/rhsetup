@@ -7,4 +7,5 @@
 #
 # Version 20191107
 
+yum makecache
 yum -y update
