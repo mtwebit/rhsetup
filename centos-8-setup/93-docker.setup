@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# description: Install Docker CE
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <mt+git@webit.hu>
+#
+# Version 20150113
+
+echo "Installing Docker CE repo and software..."
+x dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+x yum makecache
+x dnf install docker-ce --nobest
+
+remember is_docker 1
+
+todos <<EOF
+--- Docker engine
+Enable and start the engine
+  systemctl enable --now docker
+Allow a user to manage docker
+  usermod -aG docker $USER
+You may want to symlink /var/lib/docker/containers to a large storage area
+  cd /var/lib/docker/
+  mv containers/ /storage/docker-containers
+  ln -s /storage/docker-containers containers
+Optionally verify the installation
+  docker run hello-world
+EOF
