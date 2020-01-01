@@ -15,6 +15,8 @@
 #
 
 ask rotper "Rotation period" "monthly"
-ask keepnum "Log archives to keep" "12"
 x sed -i "s/weekly/${rotper}/g" /etc/logrotate.conf
+ask keepnum "Log archives to keep" "12"
 x sed -i "s/rotate\ 4/rotate\ ${keepnum}/g" /etc/logrotate.conf
+echo "Turning compress log files on."
+x sed -i "s/#compress/compress/g" /etc/logrotate.conf
