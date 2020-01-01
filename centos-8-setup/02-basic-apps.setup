@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# description: Basic system utilities and setup (essential)
+# description: Basic system utilities (essential)
 #
 # CentOS/Fedora post install customization utility
 #   created by Tamas Meszaros <mt+git@webit.hu>
 #
-# Version 20191107
+# Version 20200101
 #
 # Info: Installs several small utilities like logwatch sudo man vim rar p7zip etc.
 # Info: 
@@ -24,35 +24,9 @@ x yum -y install ntsysv lftp expect xauth bash-completion git
 # echo "Installing additional compressing and uncompressing utilities (zip, rar, ..)"
 # x yum -y --enablerepo=rpmforge install rar unrar p7zip p7zip-plugins
 
-echo "Customizing shell settings (command aliases, automated logout, etc.)..."
-cat <<EOF >/etc/profile.d/custom.sh
-# Can not alter the name of the history file
-readonly HISTFILE
-readonly HISTFILESIZE
-# Set up some history stuff
-shopt -s histappend cmdhist checkwinsize
-EOF
-
-x chmod 755 /etc/profile.d/custom.sh
-
 if askif "Do you want to install Midnight Commander?" n; then
   x yum -y install mc
   remember is_commander 1
-fi
-
-if askif "Do you want to get more messages during boot (instead of the blue bar)?" n; then
-  echo "Making the boot process more verbose..."
-  x "sed -i 's/ rhgb quiet/ loglevel=5/' /etc/default/grub"
-  x "grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null"
-  x plymouth-set-default-theme details
-  todos <<EOF
---- Boot log level
-If you want to disable verbose booting, replace loglevel with rhgb quiet in grub
-  sed -i 's/loglevel=5/ rhgb quiet/' /etc/default/grub
-  grub2-mkconfig -o /boot/grub2/grub.cfg
-  plymouth-set-default-theme text
-
-EOF
 fi
 
 todos <<EOF

@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+# description: Customize log rotation
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <mt+git@webit.hu>
+#
+# Version 20200101
+#
+# Info: Set monthly rotation and keep more logs
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+ask rotper "Rotation period" "monthly"
+ask keepnum "Log archives to keep" "12"
+x sed -i "s/weekly/${rotper}/g" /etc/logrotate.conf
+x sed -i "s/rotate 4/rotate ${keepnum}/g" /etc/logrotate.conf

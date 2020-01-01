@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# description: Change boot messages
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <mt+git@webit.hu>
+#
+# Version 20200101
+#
+# Info: Make boot less verbose
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Making the boot process more verbose..."
+x "sed -i 's/ rhgb quiet/ loglevel=5/' /etc/default/grub"
+x "grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null"
+x plymouth-set-default-theme details
+
+todos <<EOF
+--- Boot log level
+If you want to disable verbose booting, replace loglevel with rhgb quiet in grub
+  sed -i 's/loglevel=5/ rhgb quiet/' /etc/default/grub
+  grub2-mkconfig -o /boot/grub2/grub.cfg
+  plymouth-set-default-theme text
+
+EOF

@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# description: Basic shell customizations (recommended)
+#
+# CentOS/Fedora post install customization utility
+#   created by Tamas Meszaros <mt+git@webit.hu>
+#
+# Version 20200101
+#
+# Info: Enables command completition, history etc.
+# Info: 
+#
+# This script can be freely distributed and modified under GPLv2.
+# See http://www.gnu.org/licenses/gpl-2.0.html
+#
+
+echo "Customizing shell settings (command aliases, automated logout, etc.)..."
+cat <<EOF >/etc/profile.d/custom.sh
+# Can not alter the name of the history file
+readonly HISTFILE
+readonly HISTFILESIZE
+# Set up some history stuff
+shopt -s histappend cmdhist checkwinsize
+EOF
+
+x chmod 755 /etc/profile.d/custom.sh
