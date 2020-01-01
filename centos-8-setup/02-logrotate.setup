@@ -17,4 +17,4 @@
 ask rotper "Rotation period" "monthly"
 ask keepnum "Log archives to keep" "12"
 x sed -i "s/weekly/${rotper}/g" /etc/logrotate.conf
-x sed -i "s/rotate 4/rotate ${keepnum}/g" /etc/logrotate.conf
+x sed -i "s/rotate\ 4/rotate\ ${keepnum}/g" /etc/logrotate.conf
