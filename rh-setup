@@ -71,6 +71,10 @@ else
   SERIAL=unknown
 fi
 
+if [ ! -x /usr/bin/tar ]; then
+  yum -y install tar 2>&1 >/dev/null
+fi
+
 echo "Done."
 
 cat << EOF
