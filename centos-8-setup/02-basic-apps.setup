@@ -16,8 +16,9 @@
 
 echo "Installing additional apps"
 echo "This will take some time..."
-x yum -y install ntsysv lftp expect xauth bash-completion git chrony
+x yum -y install ntsysv lftp expect xauth bash-completion git chrony policycoreutils-python-utils
 # expect provides mkpasswd
+# policycoreutils-python-utils provides semanage
 # xauth needed by remote ssh X11 forwarding
 
 # TODO
