@@ -21,8 +21,8 @@ x yum -y install crontabs at logwatch ntpdate policycoreutils-python file man ma
 # expect provides mkpasswd
 # xauth needed by remote ssh X11 forwarding
 
-echo "Installing additional compressing and uncompressing utilities (zip, rar, ..)"
-x yum -y --enablerepo=rpmforge install rar unrar p7zip p7zip-plugins zip unzip
+#echo "Installing additional compressing and uncompressing utilities (zip, rar, ..)"
+#x yum -y --enablerepo=rpmforge install rar unrar p7zip p7zip-plugins zip unzip
 
 if askif "Do you want to install Midnight Commander?" n; then
   x yum -y install mc
