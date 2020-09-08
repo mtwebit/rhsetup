@@ -33,19 +33,19 @@ x yum -y install yum-plugin-changelog yum-plugin-ps yum-plugin-verify yum-presto
 echo "Setting up software repositories"
 echo "EPEL: Extra Packages for Enterprise Linux (enabled)."
 x rpm --import https://fedoraproject.org/static/0608B895.txt
-x yum -y install http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-7.noarch.rpm
+x yum -y install https://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-12.noarch.rpm
 echo "REMI: additional software for EL by Remi (enabled)."
-x rpm --import http://rpms.famillecollet.com/RPM-GPG-KEY-remi
-x yum -y install http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
-x "yum-config-manager --enable remi >/dev/null"
-echo "RepoForge (RPMForge): additional software for EL (disabled)."
-x rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt
-x yum -y install http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm
-x "yum-config-manager --disable rpmforge > /dev/null"
-echo "Elrepo: additional hardware drivers and utilities (enabled)."
-x rpm --import http://elrepo.org/RPM-GPG-KEY-elrepo.org
-x yum -y install http://www.elrepo.org/elrepo-release-7.0-2.el7.elrepo.noarch.rpm
-x "yum-config-manager --enable elrepo > /dev/null"
+#x rpm --import http://rpms.famillecollet.com/RPM-GPG-KEY-remi
+#x yum -y install http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
+#x "yum-config-manager --enable remi >/dev/null"
+#echo "RepoForge (RPMForge): additional software for EL (disabled)."
+#x rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt
+#x yum -y install http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm
+#x "yum-config-manager --disable rpmforge > /dev/null"
+#echo "Elrepo: additional hardware drivers and utilities (enabled)."
+#x rpm --import http://elrepo.org/RPM-GPG-KEY-elrepo.org
+#x yum -y install http://www.elrepo.org/elrepo-release-7.0-2.el7.elrepo.noarch.rpm
+#x "yum-config-manager --enable elrepo > /dev/null"
 echo "CentOSPlus: centos-patched kernels (enabled)."
 x "yum-config-manager --enable centosplus > /dev/null"
 echo "LUX-HAT: collection of useful network and sysadmin stuff (disabled)."
