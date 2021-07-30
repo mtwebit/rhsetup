@@ -34,6 +34,7 @@ ARCH=$(arch)
 RELEASE=$(rpm -q centos-release fedora-release redhat-release centos-stream-release | grep -v "not installed")
 # OS vendor (centos, redhat, fedora, etc.)
 OS=$(echo ${RELEASE} | cut -d"-" -f 1)
+echo ${RELEASE} | cut -d"-" -f 1
 if [ "$(echo ${RELEASE} | cut -d"-" -f 1)" == "stream" ]; then
   OSMAJOR=$(echo ${RELEASE} | cut -d"-" -f 4 | cut -d. -f 1)
   OSMINOR=$(echo ${RELEASE} | cut -d"-" -f 5 | cut -d. -f 1)
