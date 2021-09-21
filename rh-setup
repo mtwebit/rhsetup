@@ -98,6 +98,10 @@ Network     : $IPZONE
 EOF
 echo -n "Downloading setup scripts for this distro..."
 
+if [ "${OS}" == "rocky" ]; then
+  OS=centos
+fi
+
 # This does not work any more
 # SFILES=${OS}-${OSMAJOR}-setup.tar.gz
 # curl -Lsf -o ${SFILES} https://github.com/mtwebit/rhsetup/archive/${SFILES}
